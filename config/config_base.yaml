@@ -1,0 +1,67 @@
+# Base configuration file for SMPL2Pressure cVAE model
+
+# Dataset configuration
+dataset:
+  name: "pressurepose"  # Options: "tip", "pressurepose", "moyo"
+  normal: flase
+
+# Model configuration
+model:
+  embed_dim: 256
+  cond_embed_dim: 256
+  dropout_rate: 0.3
+  cond_type: "vertices"  # options: "vertices",
+  pretrained_cond_path: "output/pointnet_pretrain.pth"
+
+  main_encoder:
+    type: "resnet18"  # options: "resnet18", "resnet34", "resnet50", "unet"
+
+  main_decoder:
+    type: "unet"  # options: "unet"
+    bilinear: false
+  
+  cond_encoder:
+    type: "pointnet"
+    use_spatial_transformer: false
+    return_global_feature: true
+  
+  cond_decoder:
+    type: "mlp"
+  
+# Training configuration
+training:
+  batch_size: 64
+  num_epochs: 100
+  learning_rate: 0.001
+  save_freq: 999
+  log_freq: 10
+  val_freq: 1
+
+  # Loss weights
+  loss:
+    pmr_weight: 10.0     # 压力图重建mse
+    kl_weight: 2.0       # kl散度
+    pcr_weight: 6.0      # 点云重建mse
+
+
+  # Optimizer
+  optimizer:
+    type: "adam"  # Options: "adam", "adamw", "sgd"
+    weight_decay: 0.0001
+
+  # Learning rate scheduler
+  scheduler:
+    type: "cosine"  # Options: "step", "cosine", "reduce_on_plateau"
+    step_size: 30
+    gamma: 0.1
+
+# Output
+output:
+  
+
+
+# Device configuration
+device: "cuda" 
+
+# Random seed for reproducibility
+seed: 42
