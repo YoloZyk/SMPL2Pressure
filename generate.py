@@ -63,57 +63,37 @@ def main():
     smpl_model = smplx.create(SMPL_MODEL, model_type='smpl', gender='neutral', ext='pkl').to(device)
 
     # 3. 准备待生成数据
-    if args.mode == 'rand':
-        dataset_kwargs = {
-            'cfgs': {
-                'dataset_path': TIP_PATH,
-                'dataset_mode': cfg['dataset'].get('mode', 'unseen_subject'),
-                'curr_fold': cfg['dataset'].get('curr_fold', 3),
-                'normalize': cfg['dataset'].get('normal', True),
-                'device': str(device)
+    with torch.no_grad():
+        if args.mode == 'rand':
+            dataset_kwargs = {
+                'cfgs': {
+                    'dataset_path': TIP_PATH,
+                    'dataset_mode': cfg['dataset'].get('mode', 'unseen_subject'),
+                    'curr_fold': cfg['dataset'].get('curr_fold', 3),
+                    'normalize': cfg['dataset'].get('normal', True),
+                    'device': str(device)
+                }
             }
-        }
-        train_data = create_dataset('tip', mode='train', **dataset_kwargs)
-        data_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=False)
+            train_data = create_dataset('tip', mode='train', **dataset_kwargs)
+            data_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=False)
 
-
-
-    else:
-        pose_paths = os.path.join(args.pose_dir, '*.pt')
-        pose_files = glob.glob(pose_paths)
-
-        all_pose = torch.empty(0)
-        for pose_file in pose_files:
-            pose = torch.load(pose_file)
-            
-            all_pose = torch.cat((all_pose, pose), dim=0)
-        
-        data_loader = DataLoader(all_pose, batch_size=args.batch_size, shuffle=False)
-        
-        for sid in range(9):
-            beta_file = os.path.join(args.output_dir, str(sid), 'config.pkl')
-            save_path = os.path.join(args.output_dir, str(sid), 'lying')
+            save_path = os.path.join(args.output_dir, "random", "lying")
             os.makedirs(save_path, exist_ok=True)
             file_cnt = len(os.listdir(save_path))
+            print(f"Generating {len(train_data)} Samples")
 
-            with open(beta_file, 'rb') as f:
-                beta = pickle.load(f)['betas']    # 10
-            
-            # 广播为Bx10
-            betas = beta.unsqueeze(0).repeat(args.batch_size, 1).to(device)
+            for data in tqdm(data_loader, desc=f"Generating R"):
+                global_orient = data['smpl'][:, :3].to(device)
+                body_pose = data['smpl'][:, 3:72]
+                betas = sample_beta(len(body_pose), range_limit=3, device=device)
+                transl = sample_transl4t(len(body_pose), device=device)
 
-            for poses in tqdm(data_loader, desc=f"Generating {sid}"):
-                global_orient = poses[:, :3].to(device)
-                body_pose = poses[:, 3:].to(device)
-
-                transl = sample_transl4t(args.batch_size, device=device)
-                
                 output = smpl_model(
-                    betas = betas,
-                    global_orient = global_orient,
-                    body_pose = body_pose,
-                    transl = transl,
-                )
+                        betas = betas,
+                        global_orient = global_orient,
+                        body_pose = body_pose,
+                        transl = transl,
+                    )
 
                 vertices = output.vertices
 
@@ -142,6 +122,70 @@ def main():
                         }, f)
                 
                 file_cnt += len(betas)
+
+        else:
+            pose_paths = os.path.join(args.pose_dir, '*.pt')
+            pose_files = glob.glob(pose_paths)
+
+            all_pose = torch.empty(0)
+            for pose_file in pose_files:
+                pose = torch.load(pose_file)
+                
+                all_pose = torch.cat((all_pose, pose), dim=0)
+            
+            data_loader = DataLoader(all_pose, batch_size=args.batch_size, shuffle=False)
+            
+            print(f"Generating 9x{len(all_pose)} Samples")
+
+            for sid in range(9):
+                beta_file = os.path.join(args.output_dir, str(sid), 'config.pkl')
+                save_path = os.path.join(args.output_dir, str(sid), 'lying')
+                os.makedirs(save_path, exist_ok=True)
+                file_cnt = len(os.listdir(save_path))
+
+                with open(beta_file, 'rb') as f:
+                    beta = pickle.load(f)['betas']    # 10
+
+                for poses in tqdm(data_loader, desc=f"Generating {sid}"):
+                    global_orient = poses[:, :3].to(device)
+                    body_pose = poses[:, 3:].to(device)
+                    betas = beta.unsqueeze(0).repeat(len(body_pose), 1).to(device)
+                    transl = sample_transl4t(len(body_pose), device=device)
+                    
+                    output = smpl_model(
+                        betas = betas,
+                        global_orient = global_orient,
+                        body_pose = body_pose,
+                        transl = transl,
+                    )
+
+                    vertices = output.vertices
+
+                    # 坐标转换
+                    vertices[:, :, 1] = 1.80 - vertices[:, :, 1]
+                    vertices[:, :, 2] = -vertices[:, :, 2]
+
+                    pred_pmap = model.inference(vertices)
+                    if cfg['dataset']['normal']:
+                        pred_pmap = pred_pmap * MAX_PRESSURE
+                    
+                    pred_pmap[pred_pmap < 1.0] = 0
+
+                    if args.viz:
+                        viz_pwm(vertices, None, pred_pmap, save_path=None)
+
+                    # save
+                    for i in range(len(betas)):
+                        with open(os.path.join(save_path, f'lying_{(i+file_cnt):06d}.pkl'), 'wb') as f:
+                            pickle.dump({
+                                "betas": betas[i].cpu(),
+                                "transl": transl[i].cpu(),
+                                "global_orient": global_orient[i].cpu(),
+                                "body_pose": body_pose[i].cpu(),
+                                "pressure": pred_pmap[i].cpu()
+                            }, f)
+                    
+                    file_cnt += len(betas)
 
     print("\nGenerate Completed!\n")
 
