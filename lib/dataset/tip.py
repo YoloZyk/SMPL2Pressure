@@ -21,11 +21,11 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from lib.dataset.base_dataset import BasePressureDataset
-
+from lib.utils.static import DATASET_META
 
 # Constants
-PRESSURE_MAX_VALUE = 512.0
-PRESSURE_NORMALIZE_SCALE = 512.0
+PRESSURE_MAX_VALUE = DATASET_META['tip']['max_p']
+PRESSURE_NORMALIZE_SCALE = PRESSURE_MAX_VALUE
 PRESSURE_NORMALIZE_OFFSET = 0.5
 PRESSURE_NORMALIZE_MULTIPLIER = 2.0
 

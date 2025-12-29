@@ -43,7 +43,7 @@ def main():
             }
         }
         train_set = create_dataset(dataset_name, mode='train', **dataset_kwargs)
-        val_set = create_dataset(dataset_name, mode='eval', **dataset_kwargs)
+        val_set = create_dataset(dataset_name, mode='val', **dataset_kwargs)
     else:
         # MoYo 和 PressurePose 的参数相对通用
         dataset_kwargs = {

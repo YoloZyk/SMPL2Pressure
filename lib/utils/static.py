@@ -16,7 +16,7 @@ DATASET_META = {
         'path': PressurePose_PATH
     }, 
     'moyo': {
-        'max_p': 100.0, 
+        'max_p': 48.0, 
         'crop_size': [110, 37], 
         'path': MoYo_PATH
     }

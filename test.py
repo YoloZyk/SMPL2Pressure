@@ -51,7 +51,7 @@ def main():
                                  normalize=cfg['dataset'].get('normal', False), 
                                  device=device)
 
-    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=True)
 
     # 3. 初始化模型并加载权重
     model = SMPL2PressureCVAE(cfg).to(device)
@@ -75,6 +75,13 @@ def main():
             if cfg['dataset'].get('normal', False):
                 pmaps = pmaps * MAX_PRESSURE
                 pred_pmap = pred_pmap * MAX_PRESSURE
+            
+            if cfg['dataset']['name'] == 'moyo':
+                pred_pmap[pred_pmap < 0.05] = 0
+            elif cfg['dataset']['name'] == 'tip':
+                pred_pmap[pred_pmap < 1.0] = 0
+            else:
+                pred_pmap[pred_pmap < 0.1] = 0
 
             # 计算指标
             metrics = compute_metrics(

@@ -19,7 +19,7 @@ import torch
 import smplx
 from torch.utils.data import Dataset, DataLoader
 
-from lib.utils.static import PressurePose_PATH, SMPL_MODEL
+from lib.utils.static import PressurePose_PATH, SMPL_MODEL, DATASET_META
 from lib.dataset.base_dataset import BasePressureDataset
 
 
@@ -34,7 +34,7 @@ class DataConstants:
     """Constants used throughout the dataset."""
     PRESSURE_HEIGHT = 64
     PRESSURE_WIDTH = 27
-    PRESSURE_MAX_VALUE = 100.0
+    PRESSURE_MAX_VALUE = DATASET_META['pressurepose']['max_p']
     GLOBAL_ORIENT_DIM = 3
     BODY_POSE_START_IDX = 3
     FEMALE_MARKER = '_f_'

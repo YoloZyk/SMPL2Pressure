@@ -21,7 +21,7 @@ from tqdm import tqdm
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from lib.utils.static import MoYo_PATH, SMPL_MODEL
+from lib.utils.static import MoYo_PATH, SMPL_MODEL, DATASET_META
 from lib.dataset.base_dataset import BasePressureDataset
 
 
@@ -29,7 +29,7 @@ class DataConstants:
     """Constants used throughout the MoYo dataset."""
     PRESSURE_HEIGHT = 110
     PRESSURE_WIDTH = 37
-    PRESSURE_MAX_VALUE = 100.0
+    PRESSURE_MAX_VALUE = DATASET_META['moyo']['max_p']
     BETAS_DIM = 10
     BODY_POSE_DIM = 69
     GLOBAL_ORIENT_DIM = 3

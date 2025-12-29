@@ -2,8 +2,8 @@
 
 # Dataset configuration
 dataset:
-  name: "pressurepose"  # Options: "tip", "pressurepose", "moyo"
-  normal: flase
+  name: "moyo"  # Options: "tip", "pressurepose", "moyo"
+  normal: true
 
 # Model configuration
 model:
@@ -11,7 +11,7 @@ model:
   cond_embed_dim: 256
   dropout_rate: 0.3
   cond_type: "vertices"  # options: "vertices",
-  pretrained_cond_path: "output/pointnet_pretrain.pth"
+  # pretrained_cond_path: "output/pointnet_pretrain.pth"
 
   main_encoder:
     type: "resnet18"  # options: "resnet18", "resnet34", "resnet50", "unet"
@@ -39,9 +39,9 @@ training:
 
   # Loss weights
   loss:
-    pmr_weight: 10.0     # 压力图重建mse
-    kl_weight: 2.0       # kl散度
-    pcr_weight: 6.0      # 点云重建mse
+    pmr_weight: 100.0     # 压力图重建mse
+    kl_weight: 10.0       # kl散度
+    pcr_weight: 60.0      # 点云重建mse
 
 
   # Optimizer

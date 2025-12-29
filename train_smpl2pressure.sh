@@ -1,1 +1,1 @@
-python train.py --config config/config_base.yaml --device cuda:1
+python train.py --config config/config_base.yaml --device cuda:0
