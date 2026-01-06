@@ -10,14 +10,16 @@ from lib.model.cvae import SMPL2PressureCVAE
 from lib.dataset import create_dataset
 from lib.utils.metrics import compute_metrics
 from lib.utils.static import TIP_PATH, DATASET_META
-from lib.utils.viz_utils import viz_pwm
+from lib.utils.viz_utils import viz_pwm, viz_compare
+from lib.baseline import pmr_pred, ipman_pred
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_dir', type=str, required=True, help='Path to the experiment directory in output/')
     parser.add_argument('--ckpt', type=str, default='best_model.pth', help='Checkpoint name')
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--baseline', action='store_true', default=False, help='Show baseline result or not')
     parser.add_argument('--viz', action='store_true', default=False, help='Visualize predictions')
     return parser.parse_args()
 
@@ -29,7 +31,7 @@ def main():
     with open(config_path, 'r') as f:
         cfg = yaml.safe_load(f)
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     
     # 2. 准备测试集
     dataset_name = cfg['dataset']['name']
@@ -62,6 +64,8 @@ def main():
 
     # 4. 推理循环
     all_metrics = []
+    ipman_metrics = []
+    pmr_metrics = []
     print(f"Testing on {dataset_name}...")
 
     with torch.no_grad():
@@ -92,14 +96,45 @@ def main():
             )
             all_metrics.append(metrics)
 
+            if args.baseline:
+                ipman_res = ipman_pred(verts, cfg['dataset']['name'])
+                pmr_res = pmr_pred(verts, cfg['dataset']['name'])
+                i_metrics = compute_metrics(
+                    ipman_res.unsqueeze(1), 
+                    pmaps.unsqueeze(1), 
+                    is_normalized=False,
+                    max_val=MAX_PRESSURE
+                )
+                ipman_metrics.append(i_metrics)
+
+                p_metrics = compute_metrics(
+                    pmr_res.unsqueeze(1), 
+                    pmaps.unsqueeze(1), 
+                    is_normalized=False,
+                    max_val=MAX_PRESSURE
+                )
+                pmr_metrics.append(p_metrics)
+
             if args.viz:
-                viz_pwm(verts, pmaps, pred_pmap, save_path=None)
+                if args.baseline:
+                    viz_compare(verts, pmaps, ipman_res, pmr_res, pred_pmap)
+                else:
+                    viz_pwm(verts, pmaps, pred_pmap, save_path=None)
 
 
     # 5. 汇总结果
     avg_metrics = {}
     for k in all_metrics[0].keys():
         avg_metrics[k] = np.mean([m[k] for m in all_metrics])
+    
+    avg_ipman = {}
+    for k in ipman_metrics[0].keys():
+        avg_ipman[k] = np.mean([m[k] for m in ipman_metrics])
+    
+    avg_pmr = {}
+    for k in pmr_metrics[0].keys():
+        avg_pmr[k] = np.mean([m[k] for m in pmr_metrics])
+
 
     # 6. 保存到文件
     result_path = os.path.join(args.exp_dir, 'test_result.txt')
@@ -109,6 +144,16 @@ def main():
         f.write("-" * 30 + "\n")
         for k, v in avg_metrics.items():
             line = f"{k}: {v:.6f}\n"
+            print(line, end='')
+            f.write(line)
+        f.write("-" * 30 + "\n")
+        for k, v in avg_ipman.items():
+            line = f"IPMAN {k}: {v:.6f}\n"
+            print(line, end='')
+            f.write(line)
+        f.write("-" * 30 + "\n")
+        for k, v in avg_pmr.items():
+            line = f"PMR {k}: {v:.6f}\n"
             print(line, end='')
             f.write(line)
             
