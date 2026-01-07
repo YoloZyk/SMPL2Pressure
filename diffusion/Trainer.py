@@ -44,9 +44,9 @@ def setup_logger(name, log_dir=None, level=logging.INFO):
         fh.setFormatter(formatter)
         lg.addHandler(fh)
     
-    sh = logging.StreamHandler()
-    sh.setFormatter(formatter)
-    lg.addHandler(sh)
+    # sh = logging.StreamHandler()
+    # sh.setFormatter(formatter)
+    # lg.addHandler(sh)
     
 
 def extract(v, t, x_shape):
@@ -204,7 +204,7 @@ def train(args, device):
                     "epoch": epoch,
                     "pmr_loss": x_loss.item(),
                     "pcr_loss": cond_loss.item(),
-                    "img shape": x_0.shape,
+                    # "img shape": x_0.shape,
                     "LR": optimizer.state_dict()['param_groups'][0]["lr"]
                 })
                 # time4
