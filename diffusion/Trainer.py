@@ -86,7 +86,7 @@ class DiffusionTrainer(nn.Module):
         noise_bar, cond_pred = self.model(x_t, t, condition)
         x_loss = 100*self.loss(noise_bar, noise)
         cond_loss = 60*self.loss(cond_pred, condition)
-        
+
         return x_loss + cond_loss, x_loss, cond_loss
     
     
@@ -182,7 +182,7 @@ def train(args, device):
                 # data_load_time = time.time()
                 # print(f"数据准备耗时：{data_load_time-start_time}s")
                 
-                loss, x_loss, cond_loss = trainer(x_0, vertices).sum()
+                loss, x_loss, cond_loss = trainer(x_0, vertices)
                 # time2
                 # diffusion_time = time.time()
                 # print(f"扩散模型耗时：{diffusion_time-data_load_time}s")
