@@ -58,11 +58,11 @@ def viz_pressure(pressure, pred, save_path=None):
 
 
 def viz_pwm(vertices, gt, pred, save_path=None):
-    if gt and pred:
-        viz_pressure(gt, pred, save_path=save_path)
     if gt is None or pred is None:
         pmap = pred if pred is not None else gt
         viz_pressure(pmap, pmap, save_path=save_path)
+    else:
+        viz_pressure(gt, pred, save_path=save_path)
 
     pv = PyRenderVisualizer(SMPL_MODEL)
 

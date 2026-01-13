@@ -48,7 +48,7 @@ def main():
     with open(config_path, 'r') as f:
         cfg = yaml.safe_load(f)
     
-    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     dataset_name = cfg['dataset']['name']
     MAX_PRESSURE = DATASET_META[dataset_name]['max_p']
 
@@ -122,10 +122,14 @@ def main():
                         }, f)
                 
                 file_cnt += len(betas)
+        elif args.mode == 'cross':
+            print("Cross Subject Generation")
 
         else:
             pose_paths = os.path.join(args.pose_dir, '*.pt')
             pose_files = glob.glob(pose_paths)
+
+            # import pdb; pdb.set_trace()
 
             all_pose = torch.empty(0)
             for pose_file in pose_files:
@@ -137,7 +141,8 @@ def main():
             
             print(f"Generating 9x{len(all_pose)} Samples")
 
-            for sid in range(9):
+            # for sid in range(9):
+            for sid in [1]:
                 beta_file = os.path.join(args.output_dir, str(sid), 'config.pkl')
                 save_path = os.path.join(args.output_dir, str(sid), 'lying')
                 os.makedirs(save_path, exist_ok=True)

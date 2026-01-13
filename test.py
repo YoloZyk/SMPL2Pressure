@@ -18,7 +18,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_dir', type=str, required=True, help='Path to the experiment directory in output/')
     parser.add_argument('--ckpt', type=str, default='best_model.pth', help='Checkpoint name')
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--baseline', action='store_true', default=False, help='Show baseline result or not')
     parser.add_argument('--viz', action='store_true', default=False, help='Visualize predictions')
     return parser.parse_args()

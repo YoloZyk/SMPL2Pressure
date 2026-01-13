@@ -85,7 +85,7 @@ class DiffusionTrainer(nn.Module):
         # loss = F.mse_loss(self.model(x_t, t, labels), noise, reduction='none')
         noise_bar, cond_pred = self.model(x_t, t, condition)
         x_loss = 100*self.loss(noise_bar, noise)
-        cond_loss = 60*self.loss(cond_pred, condition)
+        cond_loss = 60*self.loss(cond_pred, condition) if cond_pred is not None else torch.tensor(0.0, device=x_0.device)
 
         return x_loss + cond_loss, x_loss, cond_loss
     

@@ -186,6 +186,7 @@ def sample(args, device):
                                  normalize=args.normal, device=device)
         
     max_p = DATASET_META[args.dataset]['max_p']
+    # max_p = 128
     test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=True)
     logger.info(f'test: {len(test_data)}  ckpt: {args.ckpt}')
     
@@ -204,6 +205,8 @@ def sample(args, device):
         for i, data in enumerate(tqdm(test_loader, desc='Test: ')):
             vertices = data['vertices'].to(device)
             
+            # import pdb; pdb.set_trace()
+
             data['pressure'] = pad_to_multiple_of_8(data['pressure'].unsqueeze(1)).squeeze()
             pressure = data['pressure'].to(device)
             
@@ -215,6 +218,13 @@ def sample(args, device):
             
             pred = sampledImg.squeeze()
             
+            if args.dataset == 'moyo':
+                pred[pred < 0.05] = 0
+            elif args.dataset == 'tip':
+                pred[pred < 1.0] = 0
+            else:
+                pred[pred < 0.1] = 0
+
             metrics = compute_metrics(
                 pred.unsqueeze(1), 
                 pressure.unsqueeze(1), 
@@ -234,13 +244,15 @@ def sample(args, device):
     file_name = args.ckpt.split('/')[-1].split('.')[0]
     result_path = os.path.join(args.output_dir, f'results/{file_name}_result.txt')
     
+    # import pdb; pdb.set_trace()
+
     with open(result_path, 'w') as f:
-        f.write(f"Test Results for experiment: {args.exp_dir}\n")
+        f.write(f"Test Results for experiment: {args.output_dir}\n")
         f.write(f"Checkpoint used: {args.ckpt}\n")
         f.write("-" * 30 + "\n")
         for k, v in avg_metrics.items():
             line = f"{k}: {v:.6f}\n"
-            logger.info(line, end='')
+            logger.info(line)
             f.write(line)
     
     logger.info(f"Results saved to: {result_path}")
