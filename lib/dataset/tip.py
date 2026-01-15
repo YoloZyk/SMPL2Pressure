@@ -12,6 +12,7 @@ from pathlib import Path
 
 import h5py
 import torch
+import smplx
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import torchvision as tv
@@ -141,6 +142,8 @@ class InBedPressureDataset(BasePressureDataset):
             'sensor_position': []
         }
 
+        self.smpl_model = smplx.create("/workspace/zyk/smpl_models/", model_type='smpl', gender='neutral', ext='pkl').to(self.device)
+
         # Load dataset based on mode
         self._load_dataset()
 
@@ -224,7 +227,11 @@ class InBedPressureDataset(BasePressureDataset):
 
     def _load_unseen_subject_test(self) -> None:
         """Load test data for unseen_subject mode."""
-        for name in THREE_FOLD[self.curr_fold - 1]:
+        if self.curr_fold > 3:
+            name_list = ["lz", "twj", "xft"]
+        else:
+            name_list = THREE_FOLD[self.curr_fold - 1]
+        for name in name_list:
             start_idx, end_idx = NAME_GROUP_MAP[name]
             for idx in range(start_idx, end_idx):
                 print(f'Loading test dataset: {idx}')
@@ -451,10 +458,20 @@ class InBedPressureDataset(BasePressureDataset):
         vertices[:, 2] = -vertices[:, 2]
         # vertices[:, 2] -= 0.10
 
+        # with torch.no_grad():
+        #     output = self.smpl_model(
+        #         betas=torch.tensor(self.data['betas'][index]).unsqueeze(0).to(self.device), 
+        #         body_pose=torch.tensor(self.data['pose'][index][3:]).unsqueeze(0).to(self.device), 
+        #         global_orient=torch.tensor(self.data['pose'][index][:3]).unsqueeze(0).to(self.device), 
+        #         transl=torch.tensor(self.data['trans'][index]).unsqueeze(0).to(self.device), 
+        #     )
+        # kp3d = output.joints.squeeze(0)
+
         result = {
             'pressure': transform(self.data['pressure'][index]).type(torch.FloatTensor).squeeze().to(self.device),
             'vertices': vertices.to(self.device),
-            'smpl': smpl_params.to(self.device)
+            'smpl': smpl_params.to(self.device), 
+            # 'kp3d': kp3d.to(self.device), 
         }
 
         # Validate return format
